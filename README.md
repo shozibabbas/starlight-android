@@ -43,7 +43,7 @@ HyperOS runs its gesture navigation only with Xiaomi's own launcher. Starlight's
 Each gesture shows a small glyph: a back bubble, a rising handle, a card stack, or the icon of the app being switched to. The strips step aside on the lock screen and in 3-button mode. Starlight reads only the package name of the app in front (to order recent apps), never what's on the screen. If HyperOS resets navigation to buttons, Starlight switches gestures back on.
 
 ### Unlock reveal
-When you unlock straight to the home screen, a flash at the fingerprint sensor sends a ring of starlight sweeping out across the home screen, with cyan and violet warp streaks and sparks racing to the edges. It only adds light, never covers anything, and lasts 0.85 seconds. Starlight starts it the moment your fingerprint is accepted (`isDeviceLocked`), usually within a frame or two of HyperOS showing the home screen. Turn it off or preview it in Starlight's setup screen.
+When you unlock straight to the home screen, a flash at the fingerprint sensor sends a ring of starlight sweeping out across the home screen, with cyan and violet warp streaks and sparks racing to the edges. It only adds light, never covers anything, and lasts 0.85 seconds. Starlight starts it the moment your fingerprint is accepted (`isDeviceLocked`), usually within a frame or two of HyperOS showing the home screen. When HyperOS reports the unlock late (it sometimes updates its lock state after the home screen is already up), a softer 0.5-second version plays instead. Turn it off or preview it in Starlight's setup screen.
 
 <p align="center"><img src="docs/unlock-reveal.gif" width="270" alt="Unlock reveal (early version): a glowing ring opens from the fingerprint sensor with star streaks racing outward"></p>
 

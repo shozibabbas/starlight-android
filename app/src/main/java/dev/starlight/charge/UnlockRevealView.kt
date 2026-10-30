@@ -46,6 +46,10 @@ class UnlockRevealView(context: Context) : View(context) {
     // Idle until play(): the window stays visible (so it keeps a surface ready to draw on)
     // but draws nothing.
     private var playing = false
+    // Softer, shorter burst for when the unlock was noticed late and the home screen has
+    // already been showing for a moment: no sensor flash, the ring starts partway out and
+    // fainter, half the streaks.
+    private var soft = false
     private var cx = 0f
     private var cy = 0f
     private var maxR = 1f
@@ -56,12 +60,13 @@ class UnlockRevealView(context: Context) : View(context) {
         maxR = max(hypot(cx, cy), hypot(cx, h - cy)) * 1.05f
     }
 
-    fun play(onEnd: () -> Unit) {
+    fun play(soft: Boolean = false, onEnd: () -> Unit) {
+        this.soft = soft
         playing = true
         progress = 0f
         invalidate()
         ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = DURATION_MS
+            duration = if (soft) SOFT_DURATION_MS else DURATION_MS
             interpolator = LinearInterpolator()
             addUpdateListener { progress = it.animatedValue as Float; invalidate() }
             addListener(object : android.animation.AnimatorListenerAdapter() {
@@ -78,12 +83,14 @@ class UnlockRevealView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         if (!playing) return
         val t = progress
-        val ease = 1 - (1 - t).pow(3)                  // ease-out cubic
+        val start = if (soft) SOFT_START else 0f        // soft: the ring is already partway out
+        val ease = start + (1 - start) * (1 - (1 - t).pow(3))  // ease-out cubic
         val r = maxR * ease
-        val fade = if (t > 0.55f) 1 - (t - 0.55f) / 0.45f else 1f
+        val strength = if (soft) SOFT_STRENGTH else 1f
+        val fade = strength * (if (t > 0.55f) 1 - (t - 0.55f) / 0.45f else 1f)
 
         // Flash at the sensor, strongest in the first frames.
-        if (t < 0.3f) {
+        if (!soft && t < 0.3f) {
             val k = 1 - t / 0.3f
             val fr = (60 + 120 * t) * density
             glow.shader = RadialGradient(cx, cy, fr,
@@ -108,7 +115,8 @@ class UnlockRevealView(context: Context) : View(context) {
         }
 
         // Warp streaks racing outward just beyond the ring.
-        for (s in streaks) {
+        for ((i, s) in streaks.withIndex()) {
+            if (soft && i % 2 == 1) continue
             val local = (t * s[2] + s[1] * 0.35f).coerceIn(0f, 1f)
             val inner = r + local * maxR * 0.18f
             val len = (16 + 110 * ease) * density * s[2]
@@ -121,7 +129,8 @@ class UnlockRevealView(context: Context) : View(context) {
         }
 
         // Sparks thrown off the ring.
-        for (s in sparks) {
+        for ((i, s) in sparks.withIndex()) {
+            if (soft && i % 2 == 1) continue
             val local = ((t - s[3]) / (1 - s[3])).coerceIn(0f, 1f)
             if (local <= 0f) continue
             val d = r + local * s[1] * 100 * density
@@ -132,6 +141,9 @@ class UnlockRevealView(context: Context) : View(context) {
 
     private companion object {
         const val DURATION_MS = 850L
+        const val SOFT_DURATION_MS = 500L
+        const val SOFT_START = 0.35f
+        const val SOFT_STRENGTH = 0.6f
         const val ORIGIN_Y = 0.835f // in-display fingerprint sensor on the Redmi Note 13 Pro+
     }
 }

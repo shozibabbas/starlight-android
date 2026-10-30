@@ -119,8 +119,14 @@ class GestureService : AccessibilityService() {
                 !keyguard.isKeyguardLocked -> "keyguard_gone"
                 else -> null
             }
-            if (source == null) pollHandler.postDelayed(this, UNLOCK_POLL_MS)
-            else handler.postAtFrontOfQueue { onUnlocked(source) }
+            if (source == null) {
+                pollHandler.postDelayed(this, UNLOCK_POLL_MS)
+            } else {
+                // Late if HyperOS has already finished its unlock (lock screen gone): the
+                // home screen has been showing for a while, so play the softer burst.
+                val late = !keyguard.isKeyguardLocked
+                handler.postAtFrontOfQueue { onUnlocked(source, late) }
+            }
         }
     }
 
@@ -159,14 +165,14 @@ class GestureService : AccessibilityService() {
         pollHandler.post(unlockPoll)
     }
 
-    private fun onUnlocked(source: String) {
+    private fun onUnlocked(source: String, late: Boolean = true) {
         pollHandler.removeCallbacks(unlockPoll)
         releaseLockWake()
         if (playedThisUnlock) return
         playedThisUnlock = true
-        Log.d(TAG, "unlock via $source, screen ${if (isScreenOn()) "on" else "not yet on"}, home=$onLauncher")
+        Log.d(TAG, "unlock via $source, late=$late, screen ${if (isScreenOn()) "on" else "not yet on"}, home=$onLauncher")
         // Only when unlocking straight to the home screen.
-        if (onLauncher && Prefs.unlockReveal(this)) showReveal() else disarmReveal()
+        if (onLauncher && Prefs.unlockReveal(this)) showReveal(soft = late) else disarmReveal()
     }
 
     /** Adds the overlay window now (drawing nothing), so starting the reveal costs no time. */
@@ -187,13 +193,13 @@ class GestureService : AccessibilityService() {
     }
 
     /** Plays the unlock reveal over everything; it never takes touches. */
-    fun showReveal() {
+    fun showReveal(soft: Boolean = false) {
         if (revealPlaying) return
         armReveal()
         val view = reveal ?: return
         revealPlaying = true
         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        view.play {
+        view.play(soft) {
             revealPlaying = false
             disarmReveal()
         }
