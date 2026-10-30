@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gesture_service_description">Swipe up from the bottom edge to go home (hold for recent apps), swipe in from either side to go back. Swipe sideways along the bottom to switch apps. Starlight only reads the name of the app in front, to know which app came before; it never reads what is on your screen.</string>
+    <string name="upnext_widget_description">Your next calendar event, and how many are left today</string>
+    <string name="prayer_widget_description">Next prayer, countdown and today\'s times (Shia Jafari method)</string>
+    <string name="milkyway_description">The Milky Way, drifting slowly, with twinkling stars and the occasional shooting star.</string>
+</resources>

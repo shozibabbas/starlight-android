@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pixel-style round camera icon for the Starlight icon pack: white disc, dark lens with a soft glint. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="192dp"
+    android:height="192dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M96,8a88,88 0,1 1,0 176a88,88 0,1 1,0 -176z" />
+    <!-- camera body -->
+    <path
+        android:fillColor="#3C4043"
+        android:pathData="M62,64h14l8,-10h24l8,10h14a12,12 0,0 1,12 12v52a12,12 0,0 1,-12 12h-68a12,12 0,0 1,-12 -12v-52a12,12 0,0 1,12 -12z" />
+    <!-- lens ring and glass -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M96,74a28,28 0,1 1,0 56a28,28 0,1 1,0 -56z" />
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M96,81a21,21 0,1 1,0 42a21,21 0,1 1,0 -42z" />
+    <path
+        android:fillColor="#1A237E"
+        android:pathData="M96,90a12,12 0,1 1,0 24a12,12 0,1 1,0 -24z" />
+    <path
+        android:fillColor="#CCFFFFFF"
+        android:pathData="M90,90a5,5 0,1 1,0 10a5,5 0,1 1,0 -10z" />
+</vector>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_glass"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="14dp">
+
+    <TextView
+        android:id="@+id/hijri"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif"
+        android:letterSpacing="0.04"
+        android:singleLine="true"
+        android:textColor="#99FFFFFF"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/next_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-light"
+            android:singleLine="true"
+            android:textColor="#FFC86B"
+            android:textSize="28sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/next_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp" />
+
+            <Chronometer
+                android:id="@+id/countdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:textColor="#99FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout style="@style/PrayerCell">
+            <TextView android:id="@+id/p0_name" style="@style/PrayerName" />
+            <TextView android:id="@+id/p0_time" style="@style/PrayerTime" />
+        </LinearLayout>
+        <LinearLayout style="@style/PrayerCell">
+            <TextView android:id="@+id/p1_name" style="@style/PrayerName" />
+            <TextView android:id="@+id/p1_time" style="@style/PrayerTime" />
+        </LinearLayout>
+        <LinearLayout style="@style/PrayerCell">
+            <TextView android:id="@+id/p2_name" style="@style/PrayerName" />
+            <TextView android:id="@+id/p2_time" style="@style/PrayerTime" />
+        </LinearLayout>
+        <LinearLayout style="@style/PrayerCell">
+            <TextView android:id="@+id/p3_name" style="@style/PrayerName" />
+            <TextView android:id="@+id/p3_time" style="@style/PrayerTime" />
+        </LinearLayout>
+        <LinearLayout style="@style/PrayerCell">
+            <TextView android:id="@+id/p4_name" style="@style/PrayerName" />
+            <TextView android:id="@+id/p4_time" style="@style/PrayerTime" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

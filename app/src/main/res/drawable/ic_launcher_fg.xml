@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A glowing three-quarter ring with a four-point star at its centre. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,30 A24,24 0 1,1 30,54"
+        android:strokeWidth="5"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="sweep"
+                android:centerX="54"
+                android:centerY="54"
+                android:startColor="#7DF9FF"
+                android:endColor="#B98CFF" />
+        </aapt:attr>
+    </path>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,42 Q55.5,52.5 66,54 Q55.5,55.5 54,66 Q52.5,55.5 42,54 Q52.5,52.5 54,42 Z" />
+</vector>
