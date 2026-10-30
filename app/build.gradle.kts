@@ -11,8 +11,8 @@ android {
         applicationId = "dev.starlight.charge"
         minSdk = 29
         targetSdk = 36
-        versionCode = 24
-        versionName = "4.8"
+        versionCode = 30
+        versionName = "4.14"
     }
 
     buildTypes {

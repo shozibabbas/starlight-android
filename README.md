@@ -43,9 +43,9 @@ HyperOS runs its gesture navigation only with Xiaomi's own launcher. Starlight's
 Each gesture shows a small glyph: a back bubble, a rising handle, a card stack, or the icon of the app being switched to. The strips step aside on the lock screen and in 3-button mode. Starlight reads only the package name of the app in front (to order recent apps), never what's on the screen. If HyperOS resets navigation to buttons, Starlight switches gestures back on.
 
 ### Unlock reveal
-When you unlock straight to the home screen, the Milky Way briefly covers the screen, then opens as a glowing iris from the fingerprint sensor. Cyan and violet warp streaks race outward as the home screen is uncovered. It takes 0.9 seconds, never blocks a tap, and can be turned off in Starlight's setup screen, which also has a preview button.
+When you unlock straight to the home screen, a flash at the fingerprint sensor sends a ring of starlight sweeping out across the home screen, with cyan and violet warp streaks and sparks racing to the edges. It only adds light, never covers anything, and lasts 0.85 seconds. Starlight starts it the moment your fingerprint is accepted (`isDeviceLocked`), usually within a frame or two of HyperOS showing the home screen. Turn it off or preview it in Starlight's setup screen.
 
-<p align="center"><img src="docs/unlock-reveal.gif" width="270" alt="Unlock reveal: a glowing iris opens from the bottom of the screen with star streaks racing outward"></p>
+<p align="center"><img src="docs/unlock-reveal.gif" width="270" alt="Unlock reveal (early version): a glowing ring opens from the fingerprint sensor with star streaks racing outward"></p>
 
 ### Also
 - **Milky Way live wallpaper.** The galaxy drifts and breathes, with twinkling stars, an occasional shooting star and parallax as you swipe between pages.

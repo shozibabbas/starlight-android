@@ -63,29 +63,142 @@ class GestureService : AccessibilityService() {
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             updateTouchable()
-            // Unlocked straight to the home screen: play the reveal.
-            if (intent.action == Intent.ACTION_USER_PRESENT && onLauncher && Prefs.unlockReveal(context)) showReveal()
-        }
-    }
-
-    private var reveal: UnlockRevealView? = null
-
-    /** Plays the unlock reveal over everything; it never takes touches. */
-    fun showReveal() {
-        if (reveal != null) return
-        val view = UnlockRevealView(this)
-        val params = overlayParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
-            Gravity.TOP or Gravity.START, touch = false)
-        runCatching { windows.addView(view, params) }.onFailure { return }
-        reveal = view
-        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        view.post {
-            view.play {
-                runCatching { windows.removeView(view) }
-                reveal = null
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF -> waitForLock()
+                // Fallback only: HyperOS sends this after its own unlock animation.
+                Intent.ACTION_USER_PRESENT -> onUnlocked("user_present")
             }
         }
     }
+
+    // ---- unlock reveal ---------------------------------------------------------------
+    // HyperOS unlocks by fingerprint from the always-on display and only turns the screen
+    // fully on ~175 ms afterwards, so screen-on is too late to start watching. Instead:
+    //   screen off -> wait until the phone is actually locked (it may lock after a delay)
+    //   locked     -> pre-arm the overlay and check the lock state every ~33 ms; these
+    //                 checks pause whenever the CPU sleeps, so they cost almost nothing
+    //   unlocked   -> play the reveal (if unlocking to the home screen) and go idle.
+
+    private var reveal: UnlockRevealView? = null
+    private var revealPlaying = false
+    private var lockedAt = 0L
+    // True until the phone is actually locked, so going home never triggers the reveal.
+    private var playedThisUnlock = true
+    @Volatile private var sawDeviceLocked = false
+
+    private val keyguard by lazy { getSystemService(KeyguardManager::class.java) }
+
+    private val lockPoll = object : Runnable {
+        override fun run() {
+            if (keyguard.isKeyguardLocked) startWatchingUnlock()
+            else if (!isScreenOn()) handler.postDelayed(this, 250)
+            // Screen back on and still unlocked: nothing to reveal.
+        }
+    }
+
+    // isDeviceLocked turns false the moment the fingerprint/face/PIN is accepted, before
+    // HyperOS starts its unlock animation; isKeyguardLocked only turns false once that
+    // animation has finished (200-400 ms later), which is too late.
+    // The checks run on their own high-priority thread: the main thread is busy with
+    // window events at exactly the moment of unlocking, which delayed them.
+    private val pollThread = android.os.HandlerThread("starlight-unlock",
+        android.os.Process.THREAD_PRIORITY_DISPLAY).apply { start() }
+    private val pollHandler = Handler(pollThread.looper)
+
+    private val unlockPoll = object : Runnable {
+        override fun run() {
+            val deviceLocked = keyguard.isDeviceLocked
+            if (deviceLocked && !sawDeviceLocked) {
+                sawDeviceLocked = true
+                releaseLockWake()
+            }
+            val source = when {
+                // Only after seeing it locked: Smart Lock can leave the device "unlocked"
+                // while the lock screen is still showing.
+                sawDeviceLocked && !deviceLocked -> "authenticated"
+                !keyguard.isKeyguardLocked -> "keyguard_gone"
+                else -> null
+            }
+            if (source == null) pollHandler.postDelayed(this, UNLOCK_POLL_MS)
+            else handler.postAtFrontOfQueue { onUnlocked(source) }
+        }
+    }
+
+    private fun isScreenOn() =
+        getSystemService(android.hardware.display.DisplayManager::class.java)
+            .getDisplay(android.view.Display.DEFAULT_DISPLAY)?.state == android.view.Display.STATE_ON
+
+    // HyperOS marks the device locked ~0.2-0.5 s after the screen goes off, often after the
+    // CPU has already gone to sleep, so the checks could miss it and fall back to the slow
+    // signal. Stay awake briefly after screen-off until the locked state has been seen.
+    private val lockWake by lazy {
+        getSystemService(android.os.PowerManager::class.java)
+            .newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "starlight:see-lock")
+            .apply { setReferenceCounted(false) }
+    }
+
+    private fun releaseLockWake() {
+        if (lockWake.isHeld) runCatching { lockWake.release() }
+    }
+
+    private fun waitForLock() {
+        if (!Prefs.unlockReveal(this)) return
+        lockWake.acquire(LOCK_WAKE_MS)
+        handler.removeCallbacks(lockPoll)
+        pollHandler.removeCallbacks(unlockPoll)
+        handler.post(lockPoll)
+    }
+
+    private fun startWatchingUnlock() {
+        if (!Prefs.unlockReveal(this)) return
+        playedThisUnlock = false
+        sawDeviceLocked = false
+        lockedAt = SystemClock.uptimeMillis()
+        armReveal()
+        pollHandler.removeCallbacks(unlockPoll)
+        pollHandler.post(unlockPoll)
+    }
+
+    private fun onUnlocked(source: String) {
+        pollHandler.removeCallbacks(unlockPoll)
+        releaseLockWake()
+        if (playedThisUnlock) return
+        playedThisUnlock = true
+        Log.d(TAG, "unlock via $source, screen ${if (isScreenOn()) "on" else "not yet on"}, home=$onLauncher")
+        // Only when unlocking straight to the home screen.
+        if (onLauncher && Prefs.unlockReveal(this)) showReveal() else disarmReveal()
+    }
+
+    /** Adds the overlay window now (drawing nothing), so starting the reveal costs no time. */
+    private fun armReveal() {
+        if (reveal != null || !Prefs.unlockReveal(this)) return
+        // Visible but transparent until it plays: an invisible window has no surface, and
+        // creating one at unlock is too slow.
+        val view = UnlockRevealView(this)
+        val params = overlayParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
+            Gravity.TOP or Gravity.START, touch = false)
+        runCatching { windows.addView(view, params) }.onSuccess { reveal = view }
+    }
+
+    private fun disarmReveal() {
+        if (revealPlaying) return
+        reveal?.let { runCatching { windows.removeView(it) } }
+        reveal = null
+    }
+
+    /** Plays the unlock reveal over everything; it never takes touches. */
+    fun showReveal() {
+        if (revealPlaying) return
+        armReveal()
+        val view = reveal ?: return
+        revealPlaying = true
+        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view.play {
+            revealPlaying = false
+            disarmReveal()
+        }
+    }
+
     private val navObserver = object : ContentObserver(handler) {
         override fun onChange(selfChange: Boolean) {
             updateTouchable()
@@ -119,6 +232,7 @@ class GestureService : AccessibilityService() {
         contentResolver.registerContentObserver(Settings.Global.getUriFor(MIUI_GESTURES), false, navObserver)
         updateTouchable()
         handler.postDelayed(keepGestures, KEEP_DELAY_MS)
+        if (keyguard.isKeyguardLocked) startWatchingUnlock()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -129,6 +243,10 @@ class GestureService : AccessibilityService() {
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        pollHandler.removeCallbacks(unlockPoll)
+        releaseLockWake()
+        pollThread.quitSafely()
+        handler.removeCallbacks(lockPoll)
         reveal?.let { runCatching { windows.removeView(it) } }
         runCatching { unregisterReceiver(stateReceiver) }
         contentResolver.unregisterContentObserver(navObserver)
@@ -144,6 +262,8 @@ class GestureService : AccessibilityService() {
         val pkg = event.packageName?.toString() ?: return
         if (pkg in launchers()) {
             onLauncher = true
+            // The home screen taking focus right after unlocking is another early signal.
+            if (!playedThisUnlock && !keyguard.isKeyguardLocked) onUnlocked("window")
             return
         }
         if (!isLaunchable(pkg)) return
@@ -431,6 +551,8 @@ class GestureService : AccessibilityService() {
         private const val NAV_MODE = "navigation_mode" // 0 = 3-button, 2 = gestures
         private const val MIUI_GESTURES = "force_fsg_nav_bar" // HyperOS's own gesture switch (global)
         private const val KEEP_DELAY_MS = 1500L
+        private const val UNLOCK_POLL_MS = 16L
+        private const val LOCK_WAKE_MS = 3000L
         private const val BOTTOM_DP = 18
         private const val EDGE_DP = 14
         private const val SWIPE_DP = 48
