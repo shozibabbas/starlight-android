@@ -61,7 +61,30 @@ class GestureService : AccessibilityService() {
     // The strips only take touches while unlocked and in gesture navigation mode, so they
     // never get in the way of the lock screen or the 3-button bar.
     private val stateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) = updateTouchable()
+        override fun onReceive(context: Context, intent: Intent) {
+            updateTouchable()
+            // Unlocked straight to the home screen: play the reveal.
+            if (intent.action == Intent.ACTION_USER_PRESENT && onLauncher && Prefs.unlockReveal(context)) showReveal()
+        }
+    }
+
+    private var reveal: UnlockRevealView? = null
+
+    /** Plays the unlock reveal over everything; it never takes touches. */
+    fun showReveal() {
+        if (reveal != null) return
+        val view = UnlockRevealView(this)
+        val params = overlayParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
+            Gravity.TOP or Gravity.START, touch = false)
+        runCatching { windows.addView(view, params) }.onFailure { return }
+        reveal = view
+        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view.post {
+            view.play {
+                runCatching { windows.removeView(view) }
+                reveal = null
+            }
+        }
     }
     private val navObserver = object : ContentObserver(handler) {
         override fun onChange(selfChange: Boolean) {
@@ -83,6 +106,7 @@ class GestureService : AccessibilityService() {
     }
 
     override fun onServiceConnected() {
+        instance = this
         windows = getSystemService(WindowManager::class.java)
         addFeedbackLayer()
         addStrips()
@@ -104,6 +128,8 @@ class GestureService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        if (instance === this) instance = null
+        reveal?.let { runCatching { windows.removeView(it) } }
         runCatching { unregisterReceiver(stateReceiver) }
         contentResolver.unregisterContentObserver(navObserver)
         removeStrips()
@@ -396,18 +422,22 @@ class GestureService : AccessibilityService() {
     private fun dp(value: Int) = value * density
     private fun px(value: Int) = (value * density).toInt()
 
-    private companion object {
-        const val TAG = "StarlightGestures"
-        const val NAV_MODE = "navigation_mode" // 0 = 3-button, 2 = gestures
-        const val MIUI_GESTURES = "force_fsg_nav_bar" // HyperOS's own gesture switch (global)
-        const val KEEP_DELAY_MS = 1500L
-        const val BOTTOM_DP = 18
-        const val EDGE_DP = 14
-        const val SWIPE_DP = 48
-        const val SWITCH_DP = 70
-        const val RECENTS_HOLD_DP = 90
-        const val SLOW_FLING_DP = 900 // dp per second
-        const val HOLD_MS = 260L
-        const val SWITCH_SESSION_MS = 3500L
+    companion object {
+        /** The running service, so the setup screen can preview the unlock reveal. */
+        var instance: GestureService? = null
+            private set
+
+        private const val TAG = "StarlightGestures"
+        private const val NAV_MODE = "navigation_mode" // 0 = 3-button, 2 = gestures
+        private const val MIUI_GESTURES = "force_fsg_nav_bar" // HyperOS's own gesture switch (global)
+        private const val KEEP_DELAY_MS = 1500L
+        private const val BOTTOM_DP = 18
+        private const val EDGE_DP = 14
+        private const val SWIPE_DP = 48
+        private const val SWITCH_DP = 70
+        private const val RECENTS_HOLD_DP = 90
+        private const val SLOW_FLING_DP = 900 // dp per second
+        private const val HOLD_MS = 260L
+        private const val SWITCH_SESSION_MS = 3500L
     }
 }

@@ -68,6 +68,9 @@ class MainActivity : Activity() {
         content.addView(toggle("Always use gestures (undo HyperOS switching to buttons)", Prefs.keepGestures(this)) {
             Prefs.setKeepGestures(this, it)
         })
+        content.addView(toggle("Milky Way reveal when unlocking to the home screen", Prefs.unlockReveal(this)) {
+            Prefs.setUnlockReveal(this, it)
+        })
 
         content.addView(label("Stand-by", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
         content.addView(toggle("Stay on as a dimmed clock while charging", Prefs.standby(this)) {
@@ -82,6 +85,14 @@ class MainActivity : Activity() {
         })
 
         content.addView(label("Preview", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
+        content.addView(button("Unlock reveal") {
+            val service = GestureService.instance
+            if (service == null) {
+                android.widget.Toast.makeText(this, "Turn on Swipe gestures first", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                service.showReveal()
+            }
+        })
         content.addView(button("Charging animation") {
             startActivity(ChargeScreenActivity.intent(this, Mode.INTRO, preview = true))
         })
