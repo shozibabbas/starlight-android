@@ -11,8 +11,8 @@ android {
         applicationId = "dev.starlight.charge"
         minSdk = 29
         targetSdk = 36
-        versionCode = 33
-        versionName = "4.17"
+        versionCode = 34
+        versionName = "4.18"
     }
 
     buildTypes {
@@ -24,8 +24,8 @@ android {
         }
     }
 
-    // Personal media (such as the video wallpaper's loop) lives in src/local, which git ignores.
-    sourceSets["main"].res.srcDir("src/local/res")
+    // Personal media (the video wallpaper's loops) lives in src/local, which git ignores.
+    sourceSets["main"].assets.srcDir("src/local/assets")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

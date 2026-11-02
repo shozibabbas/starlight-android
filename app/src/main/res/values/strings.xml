@@ -3,5 +3,5 @@
     <string name="upnext_widget_description">Your next calendar event, and how many are left today</string>
     <string name="prayer_widget_description">Next prayer, countdown and today\'s times (Shia Jafari method)</string>
     <string name="milkyway_description">The Milky Way, drifting slowly, with twinkling stars and the occasional shooting star.</string>
-    <string name="video_description">A looping video wallpaper, from your own local video.</string>
+    <string name="video_description">Your own looping videos. Choose which one plays in the Starlight app.</string>
 </resources>

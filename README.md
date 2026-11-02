@@ -32,7 +32,7 @@ A Milky Way–themed companion app for Android, built for a Xiaomi phone on Hype
 
 ### Also
 - **Milky Way live wallpaper.** The galaxy drifts and breathes, with twinkling stars, an occasional shooting star and parallax as you swipe between pages.
-- **Video loop live wallpaper.** Loops any video of your own, muted, only while visible. Put it at `app/src/local/res/raw/wallpaper_loop.mp4` (git ignores `app/src/local/`, so personal media never ends up in the repo) and rebuild.
+- **Video loop live wallpapers.** Loops videos of your own, muted, only while visible. Drop them in `app/src/local/assets/loops/` named like `Title - Subtitle.mp4` (git ignores `app/src/local/`, so personal media never ends up in the repo) and rebuild. Starlight's setup screen lists each loop by name (`Title · Subtitle`) with a ✓ on the one playing, and switches the home screen instantly. Its **Lock screen** button saves the video to `Movies/Starlight` and opens it in Gallery, since HyperOS only takes lock-screen videos from there.
 - **A tiny icon pack.** A round camera icon to replace Xiaomi's square one.
 
 ## Building

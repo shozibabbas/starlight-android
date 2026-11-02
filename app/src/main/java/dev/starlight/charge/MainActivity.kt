@@ -24,11 +24,13 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 
 /** Setup screen: starts the watcher, checks the permissions it needs, and offers previews. */
 class MainActivity : Activity() {
 
     private lateinit var checks: LinearLayout
+    private lateinit var wallpapers: LinearLayout
     private val density by lazy { resources.displayMetrics.density }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +46,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshChecks()
+        refreshWallpapers()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -69,17 +72,9 @@ class MainActivity : Activity() {
             Prefs.setStandby(this, it)
         })
 
-        content.addView(label("Wallpaper", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
-        content.addView(button("Set Milky Way live wallpaper") {
-            startActivity(Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-                .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                    ComponentName(this, MilkyWayWallpaper::class.java)))
-        })
-        if (VideoWallpaper.videoId(this) != 0) content.addView(button("Set video loop live wallpaper") {
-            startActivity(Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-                .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                    ComponentName(this, VideoWallpaper::class.java)))
-        })
+        content.addView(label("Wallpapers", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
+        wallpapers = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(wallpapers)
 
         content.addView(label("Preview", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
         content.addView(button("Charging animation") {
@@ -138,6 +133,70 @@ class MainActivity : Activity() {
         checks.addView(button("Open app settings") {
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
         })
+    }
+
+    /** Milky Way plus one row per video loop; ✓ marks what's on the home screen now. */
+    private fun refreshWallpapers() {
+        if (!::wallpapers.isInitialized) return
+        wallpapers.removeAllViews()
+        val home = WallpaperManager.getInstance(this).wallpaperInfo?.component
+        val milkyWay = ComponentName(this, MilkyWayWallpaper::class.java)
+        wallpapers.addView(button(mark(home == milkyWay) + "Milky Way") { setLive(milkyWay) })
+
+        val loops = VideoWallpaper.loops(this)
+        val playing = VideoWallpaper.current(this)
+        for (loop in loops) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            val on = VideoWallpaper.isActive(this) && loop == playing
+            row.addView(button(mark(on) + VideoWallpaper.title(loop)) { useLoop(loop) }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, dp(56), 1f).apply { bottomMargin = dp(8) }
+            })
+            row.addView(button("Lock screen") { setLockScreen(loop) }.apply {
+                textSize = 14f
+                background = rounded(0x14FFFFFF)
+                layoutParams = LinearLayout.LayoutParams(dp(116), dp(56)).apply {
+                    bottomMargin = dp(8)
+                    marginStart = dp(8)
+                }
+            })
+            wallpapers.addView(row)
+        }
+        if (loops.isNotEmpty()) {
+            wallpapers.addView(label("Lock screen opens the video in Gallery: tap More → Set as wallpaper → Lock screen → Apply. " +
+                "HyperOS then resets the home screen, so choose a home wallpaper here again afterwards.", 13f, 0x99FFFFFF.toInt()).apply {
+                setPadding(0, dp(4), 0, 0)
+            })
+        }
+    }
+
+    private fun mark(on: Boolean) = if (on) "✓  " else ""
+
+    private fun setLive(component: ComponentName) {
+        startActivity(Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
+            .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, component))
+    }
+
+    private fun useLoop(loop: String) {
+        Prefs.setVideoLoop(this, loop)
+        if (VideoWallpaper.isActive(this)) {
+            Toast.makeText(this, "${VideoWallpaper.title(loop)} is on your home screen", Toast.LENGTH_SHORT).show()
+            refreshWallpapers()
+        } else {
+            setLive(ComponentName(this, VideoWallpaper::class.java))
+        }
+    }
+
+    private fun setLockScreen(loop: String) {
+        Toast.makeText(this, "Opening ${VideoWallpaper.title(loop)} in Gallery…", Toast.LENGTH_SHORT).show()
+        Thread {
+            val uri = VideoWallpaper.exportForLockScreen(this, loop)
+            runOnUiThread {
+                val view = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "video/mp4")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val gallery = Intent(view).setPackage("com.miui.gallery")
+                startActivity(if (gallery.resolveActivity(packageManager) != null) gallery else view)
+            }
+        }.start()
     }
 
     private fun check(name: String, ok: Boolean, fix: () -> Unit) {
