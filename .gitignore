@@ -20,3 +20,6 @@ local.properties
 tools/*.png
 tools/*.mp4
 tools/frames/
+
+# Personal media for the video wallpaper (not ours to publish)
+app/src/local/

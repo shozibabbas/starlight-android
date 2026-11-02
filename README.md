@@ -1,6 +1,6 @@
 # Starlight
 
-A Milky Way–themed companion app for Android, built for a Xiaomi phone on HyperOS used with a third-party launcher. It covers charging, the night, prayer times and swipe navigation, all in one starry look.
+A Milky Way–themed companion app for Android, built for a Xiaomi phone on HyperOS used with a third-party launcher. It covers charging, the night, prayer times and the wallpaper, all in one starry look. It uses no accessibility service.
 
 <p align="center">
   <img src="docs/charging.jpg" width="250" alt="Charging screen: glowing ring at 89%, 4.37 A, 18.4 W, 7 min to full">
@@ -30,25 +30,9 @@ A Milky Way–themed companion app for Android, built for a Xiaomi phone on Hype
 
 <p align="center"><img src="docs/prayer-widget.jpg" width="520" alt="Prayer times widget: Hijri date, next prayer Fajr 5:10 am with countdown, and the five daily times"></p>
 
-### Gestures for third-party launchers
-HyperOS runs its gesture navigation only with Xiaomi's own launcher. Starlight's accessibility service adds thin, invisible strips along the screen edges instead:
-
-| Gesture | Action |
-|---|---|
-| Swipe up from the bottom | Home |
-| Swipe up and hold, or a slow swipe past the middle | Recent apps |
-| Swipe sideways along the bottom | Previous / next app |
-| Swipe in from either side | Back |
-
-Each gesture shows a small glyph: a back bubble, a rising handle, a card stack, or the icon of the app being switched to. The strips step aside on the lock screen and in 3-button mode. Starlight reads only the package name of the app in front (to order recent apps), never what's on the screen. If HyperOS resets navigation to buttons, Starlight switches gestures back on.
-
-### Unlock reveal
-When you unlock straight to the home screen, a flash at the fingerprint sensor sends a ring of starlight sweeping out across the home screen, with cyan and violet warp streaks and sparks racing to the edges. It only adds light, never covers anything, and lasts 0.85 seconds. Starlight starts it the moment your fingerprint is accepted (`isDeviceLocked`), usually within a frame or two of HyperOS showing the home screen. When HyperOS reports the unlock late (it sometimes updates its lock state after the home screen is already up), a softer 0.5-second version plays instead. Turn it off or preview it in Starlight's setup screen.
-
-<p align="center"><img src="docs/unlock-reveal.gif" width="270" alt="Unlock reveal (early version): a glowing ring opens from the fingerprint sensor with star streaks racing outward"></p>
-
 ### Also
 - **Milky Way live wallpaper.** The galaxy drifts and breathes, with twinkling stars, an occasional shooting star and parallax as you swipe between pages.
+- **Video loop live wallpaper.** Loops any video of your own, muted, only while visible. Put it at `app/src/local/res/raw/wallpaper_loop.mp4` (git ignores `app/src/local/`, so personal media never ends up in the repo) and rebuild.
 - **A tiny icon pack.** A round camera icon to replace Xiaomi's square one.
 
 ## Building
@@ -67,18 +51,14 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ## Setup on the phone
 
-Open Starlight and follow its setup screen. A few permissions can't be requested in-app and need adb once:
+Open Starlight and follow its setup screen. Notification access can also be granted over adb:
 
 ```bash
 P=dev.starlight.charge
-adb shell pm grant $P android.permission.WRITE_SECURE_SETTINGS   # restore gestures after HyperOS resets them
-adb shell appops set $P GET_USAGE_STATS allow                    # recent apps, for swiping between them
 adb shell cmd notification allow_listener $P/$P.NotificationWatcher
 ```
 
 On Xiaomi phones, also set **Autostart**, **Display over other apps** and **Show on lock screen** from the phone's own settings screens, not over adb. HyperOS's Security app resets anything it didn't see you set whenever the app updates.
-
-For gestures, turn on **Settings → Accessibility → Starlight gestures**, then switch the phone to gesture navigation.
 
 ## Tools
 
@@ -97,7 +77,7 @@ ffmpeg -framerate 30 -i frames/f%04d.png -c:v libx264 -crf 17 -pix_fmt yuv420p m
 
 - **Charging figures are battery-side:** battery voltage × battery current. That's always below the charger's rating, because of conversion losses and the power the phone itself uses. HyperOS doesn't let apps read the charger-side voltage or the charger type.
 - **Built and tested on a Redmi Note 13 Pro+ 5G (HyperOS, Android 16).** Other phones should work, but the Xiaomi-specific workarounds may not apply.
-- **The gesture layer is an accessibility service.** It performs only Home, Back and Recents, plus launching apps for quick switching.
+- **No accessibility service.** Earlier versions had a gesture layer and an unlock animation built on one; they were removed in 4.16 because accessibility services can trip banking apps' security checks.
 
 ## Licence
 

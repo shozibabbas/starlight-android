@@ -64,14 +64,6 @@ class MainActivity : Activity() {
         checks = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         content.addView(checks)
 
-        content.addView(label("Navigation", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
-        content.addView(toggle("Always use gestures (undo HyperOS switching to buttons)", Prefs.keepGestures(this)) {
-            Prefs.setKeepGestures(this, it)
-        })
-        content.addView(toggle("Milky Way reveal when unlocking to the home screen", Prefs.unlockReveal(this)) {
-            Prefs.setUnlockReveal(this, it)
-        })
-
         content.addView(label("Stand-by", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
         content.addView(toggle("Stay on as a dimmed clock while charging", Prefs.standby(this)) {
             Prefs.setStandby(this, it)
@@ -83,16 +75,13 @@ class MainActivity : Activity() {
                 .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
                     ComponentName(this, MilkyWayWallpaper::class.java)))
         })
+        if (VideoWallpaper.videoId(this) != 0) content.addView(button("Set video loop live wallpaper") {
+            startActivity(Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
+                .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                    ComponentName(this, VideoWallpaper::class.java)))
+        })
 
         content.addView(label("Preview", 13f, 0x99FFFFFF.toInt()).apply { setPadding(0, dp(28), 0, dp(8)) })
-        content.addView(button("Unlock reveal") {
-            val service = GestureService.instance
-            if (service == null) {
-                android.widget.Toast.makeText(this, "Turn on Swipe gestures first", android.widget.Toast.LENGTH_SHORT).show()
-            } else {
-                service.showReveal()
-            }
-        })
         content.addView(button("Charging animation") {
             startActivity(ChargeScreenActivity.intent(this, Mode.INTRO, preview = true))
         })
@@ -137,9 +126,6 @@ class MainActivity : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))
             }
         }
-        check("Swipe gestures", gesturesEnabled()) {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
         check("Notification access (for stand-by)", NotificationWatcher.isEnabled(this)) {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
@@ -152,12 +138,6 @@ class MainActivity : Activity() {
         checks.addView(button("Open app settings") {
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
         })
-    }
-
-    private fun gesturesEnabled(): Boolean {
-        val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
-        val me = ComponentName(this, GestureService::class.java).flattenToString()
-        return enabled.split(':').any { it.equals(me, ignoreCase = true) }
     }
 
     private fun check(name: String, ok: Boolean, fix: () -> Unit) {
